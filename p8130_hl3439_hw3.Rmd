@@ -1,0 +1,127 @@
+---
+title: "HW3"
+author: Hanyu Lu
+date: October 2020
+output: 
+  pdf_document:
+    latex_engine : "xelatex"
+---
+
+# Problem 1
+
+```{r}
+library(tidyverse)
+library(arsenal)
+```
+
+
+```{r}
+exercise_df = read_csv("./Exercise.csv")
+```
+
+```{r}
+
+
+exercise_df2 = mutate(exercise_df, Group2 = Group) %>% 
+  mutate(
+    Group = as.factor(Group),
+    Group2 = as.factor(Group2),
+  )
+
+levels(exercise_df2$Group2) = 
+  list(Systolic_POST_intervention = "1", Systolic_POST_control = "0")
+
+levels(exercise_df2$Group) = 
+  list(Systolic_PRE_intervention = "1", Systolic_PRE_control = "0")
+
+exercise_df2  =
+exercise_df2  %>%
+pivot_wider(
+  names_from = Group,
+  values_from = Systolic_PRE, 
+  ) %>% 
+  pivot_wider(
+  names_from = Group2,
+  values_from = Systolic_POST, 
+  )  %>% 
+  mutate(
+    control_difference = Systolic_POST_control - Systolic_PRE_control,
+    intervention_difference = Systolic_POST_intervention - Systolic_PRE_intervention
+  )
+
+my_controls <- tableby.control(
+                total = F,
+                test = F,  # No test p-values yet
+                numeric.stats = c("meansd", "medianq1q3"),
+                stats.labels = 
+                list(
+                meansd = "Mean (SD)",
+                medianq1q3 = "Median (Q1, Q3)")
+                )
+
+tab2 <- tableby( ~ Systolic_POST_intervention + Systolic_POST_control  + Systolic_PRE_intervention + Systolic_PRE_control + control_difference + intervention_difference, data=exercise_df2, control=my_controls)
+
+summary(tab2, title = "Descriptive Statistics", text = T, digits = 2)
+```
+
+a) Perform appropriate tests to assess if the Systolic BP at 6 months is significantly different from the baseline values for each of the groups:
+i) Intervention group (5p)
+
+Since we don't know true population variance.  We are going to use paired t-test because we intend to compare scores on two different variables but on the same group. Additionally, we test for the mean of the differences with unknown variance.
+
+$H_0$: the Systolic BP at 6 months is equal to the baseline values for intervention group
+$H_1$: the Systolic BP at 6 months is significantly different from the baseline values for intervention group
+
+$\bar{d} = \sum\limits_{i=1}^{n}d_i/n$ = -8.58
+$s_d = \sqrt{\sum\nolimits_{i=1}^{n}(d_i-\bar{d})^2/(n-1)}$ = 17.17
+
+$t = \frac{\bar{d}-0}{s_d/\sqrt{n}} = \frac{-8.58 - 0}{17.17/\sqrt{36}}$ = -3
+
+$t_{36-1,0.975}$ = 2.03
+
+Since this t-test is two-sided, |t| = 3 > $t_{36-1,0.975}$ = 2.03.
+
+We can reject $H_0$. We can conclude that the Systolic BP at 6 months is significantly different from the baseline values for intervention group
+
+```{r}
+sd(exercise_df2$intervention_difference, na.rm = TRUE)
+
+-8.58/(17.17/6)
+
+qt(0.975,35)
+```
+
+ii) Control group (5p)
+
+Since we don't know true population variance.  We are going to use paired t-test because we intend to compare scores on two different variables but on the same group. Additionally, we test for the mean of the differences with unknown variance.
+
+$H_0$: the Systolic BP at 6 months is equal to the baseline values for control group
+$H_1$: the Systolic BP at 6 months is significantly different from the baseline values for control group
+
+$\bar{d} = \sum\limits_{i=1}^{n}d_i/n$ = -3.33
+$s_d = \sqrt{\sum\nolimits_{i=1}^{n}(d_i-\bar{d})^2/(n-1)}$ = 14.81
+
+$t = \frac{\bar{d}-0}{s_d/\sqrt{n}} = \frac{-3.33 - 0}{14.81/\sqrt{36}}$ = -1.35
+
+$t_{36-1,0.975}$ = 2.03
+
+Since this t-test is two-sided, |t| = 1.35 < $t_{36-1,0.975}$ = 2.03.
+
+We cannot reject $H_0$. We can conclude that the Systolic BP at 6 months is not significantly different from the baseline values for intervention group
+
+```{r}
+sd(exercise_df2$control_difference, na.rm = TRUE)
+
+-3.33/(14.81/6)
+
+qt(0.975,35)
+```
+
+# Problem 2
+
+a) Generate one random sample of size n=20 from the underlying (null) true distribution. Calculate the test statistic, compare to the critical value and report the conclusion: 1, if you reject 𝐻0 or 0, if you fail to rejected 𝐻0. 
+
+```{r}
+random_sample = rnorm(20, mean = 120, sd = 15)
+```
+
